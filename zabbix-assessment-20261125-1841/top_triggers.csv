@@ -1,0 +1,51 @@
+﻿Trigger;Host;Severidade;Disparos;MTTR mediano (min);MTTA mediano (min);Flapping
+Huawei VRP: Interface GigabitEthernet6/0/4(TCS): Link down;;Média;7731;1.0;;sim
+Huawei VRP: Interface GigabitEthernet3/0/14(TC): Link down;;Média;7526;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/19(TVs): Link down;;Média;4197;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/11(TCS): Link down;;Média;4042;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/9(TCS): Link down;;Média;3911;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/21(TC): Link down;;Média;3733;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/21(TC): Link down;;Média;3660;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/1(MPLS_VIVO_1579854_10MB): Link down;;Média;3190;1.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/13(TCS): Link down;;Média;2803;1.1;;sim
+Huawei VRP: Interface GigabitEthernet6/0/11(TC): Link down;;Média;2790;2.8;;sim
+Huawei VRP: Interface GigabitEthernet0/0/21(TCS): Link down;;Média;2625;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/19(PC_ADM): Link down;;Média;2335;5.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/8(TCS): Link down;;Média;2304;1.0;;sim
+Huawei VRP: Interface GigabitEthernet2/0/21(DVR): Link down;;Média;2281;5.1;;sim
+Huawei VRP: Interface GigabitEthernet0/0/14(TCS): Link down;;Média;2230;1.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/12(TC): Link down;;Média;2194;1.1;;sim
+Huawei VRP: Interface GigabitEthernet5/0/13(TERM_CONSULTA): Link down;;Média;2194;1.1;;sim
+Huawei VRP: Interface GigabitEthernet0/0/21(TCS): Link down;;Média;2079;1.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/7(TC): Link down;;Média;2076;1.0;;sim
+Huawei VRP: Interface GigabitEthernet6/0/4(TC): Link down;;Média;2001;1.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/10(TERM_CONSULTA): Link down;;Média;1928;1.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/9(PC_ADM/RAMAL): Link down;;Média;1854;3.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/10(TC): Link down;;Média;1847;1.8;;sim
+Huawei VRP: Interface GigabitEthernet6/0/1(TC): Link down;;Média;1757;2.1;;sim
+Huawei VRP: Interface GigabitEthernet0/0/2(TC): Link down;;Média;1727;1.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/21(TC): Link down;;Média;1678;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/12(TC): Link down;;Média;1667;1.9;;sim
+Huawei VRP: Interface GigabitEthernet0/0/12(TC): Link down;;Média;1656;1.0;;sim
+Huawei VRP: Interface GigabitEthernet6/0/16(PC_ADM/RAMAL): Link down;;Média;1649;2.5;;sim
+Huawei VRP: Interface GigabitEthernet4/0/20(TCS): Link down;;Média;1642;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/18(TC): Link down;;Média;1617;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/4(TCS): Link down;;Média;1583;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/22(TCS): Link down;;Média;1581;6.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/8(TCS): Link down;;Média;1569;1.0;;sim
+Huawei VRP: Interface GigabitEthernet0/0/14(CFTV): Link down;;Média;1566;5.9;;sim
+Huawei VRP: Interface GigabitEthernet6/0/4(TCS): Ethernet has changed to lower speed than it was before;;Informação;1541;11.0;;não
+Huawei VRP: Interface GigabitEthernet0/0/17(TCS): Link down;;Média;1538;1.0;;sim
+Huawei VRP: Interface GigabitEthernet6/0/15(TERM_CONSULTA): Link down;;Média;1505;1.0;;sim
+Huawei VRP: Interface GigabitEthernet6/0/9(TERM_CONSULTA): Link down;;Média;1504;1.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/9(TCS): Link down;;Média;1500;1.0;;sim
+Huawei VRP: Interface GigabitEthernet3/0/12(TERM_CONSULTA): Link down;;Média;1490;1.0;;sim
+Huawei VRP: Interface GigabitEthernet3/0/14(TC): Ethernet has changed to lower speed than it was before;;Informação;1458;10.8;;não
+Huawei VRP: Interface GigabitEthernet5/0/16(TC): Link down;;Média;1422;1.2;;sim
+Huawei VRP: Interface GigabitEthernet6/0/3(TCS): Link down;;Média;1422;1.0;;sim
+Huawei VRP: Interface GigabitEthernet4/0/13(TC): Link down;;Média;1399;1.1;;sim
+Huawei VRP: Interface GigabitEthernet0/0/19(PC_ADM): Ethernet has changed to lower speed than it was before;;Informação;1388;16.0;;não
+Huawei VRP: Interface GigabitEthernet3/0/17(TC): Link down;;Média;1384;1.9;;sim
+Huawei VRP: Interface GigabitEthernet0/0/13(TCS): Link down;;Média;1310;1.0;;sim
+Huawei VRP: Interface GigabitEthernet5/0/22(TC): Link down;;Média;1293;1.9;;sim
+Huawei VRP: Interface GigabitEthernet3/0/4(TCS): Link down;;Média;1215;1.0;;sim

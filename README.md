@@ -1,6 +1,6 @@
 # Guia de Execução - Assessment Zabbix
 
-> Guia de execução e troubleshooting para o time de suporte.
+> Documentação técnica de execução e troubleshooting para a equipe de infraestrutura.
 > Script: [zabbix_assessment.py](zabbix_assessment.py) · Compatível com Zabbix **5.0 a 7.x** · Python **3.8+**
 
 ---
@@ -58,255 +58,81 @@ A avaliação é organizada em **5 pilares** e 18 domínios:
 
 ---
 
-## 4. Execução passo a passo
+## 4. Execução
 
-### 4.1 Definir as variáveis de ambiente
+Pré-requisito: credencial criada (seção 3) e acesso HTTPS ao Zabbix a partir da máquina de execução.
+No Windows, troque `python3 zabbix_assessment.py` por `py .\zabbix_assessment.py`.
 
-Prefira variáveis de ambiente a parâmetros na linha de comando, para que o token não fique no histórico do shell.
+### Passo 1 — Definir URL e token (só na sessão atual)
 
-**Linux / jump server (bash):**
+**Linux (bash)**
 ```bash
 export ZBX_URL='https://zabbix.interno/'
-read -rs ZBX_TOKEN && export ZBX_TOKEN        # cola o token e Enter (não aparece na tela)
+read -rsp 'API token: ' ZBX_TOKEN && export ZBX_TOKEN
 ```
 
-**Windows (PowerShell):** ver o guia completo na [seção 5](#5-execução-no-windows-powershell).
+**Windows (PowerShell 5.1 ou 7+)**
 ```powershell
 $env:ZBX_URL = 'https://zabbix.interno/'
-$sec = Read-Host 'API token' -AsSecureString   # não aparece na tela nem no histórico
-$env:ZBX_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
-Remove-Variable sec
+$env:ZBX_TOKEN = [pscredential]::new('t', (Read-Host 'API token' -AsSecureString)).GetNetworkCredential().Password
 ```
 
-**Alternativa com usuário/senha:**
-```bash
-export ZBX_USER='svc_assessment'
-# senha: ZBX_PASSWORD ou o script pede no prompt (recomendado)
-```
-A sessão aberta com usuário/senha é encerrada (`user.logout`) ao final.
+> ⚠️ Nunca digite o token direto no comando: ele fica gravado no histórico do shell. O que é digitado no prompt não é gravado.
 
-> A URL pode ser a do frontend (`https://zabbix.interno/`) ou direto a da API (`.../api_jsonrpc.php`) — o script completa o caminho.
+Sem token? Use `ZBX_USER='svc_assessment'` no lugar de `ZBX_TOKEN`; o script pede a senha.
 
-### 4.2 Testar conexão e permissões (sempre fazer primeiro)
+### Passo 2 — Testar conexão e permissões
 
 ```bash
 python3 zabbix_assessment.py --test
 ```
 
-Saída esperada (exemplo):
-```
-Conectado: https://zabbix.interno/api_jsonrpc.php
-Versão: 7.0.5 (suporte completo) · autenticação: api_token · header Bearer: True
-  host.get             OK  1523
-  item.get             OK  98231
-  ...
-  token.get            OK  4
-  hanode.get           OK  2
-```
-
-- `OK` → método acessível.
-- `n/a (requer X.Y+)` → normal: o método não existe naquela versão.
-- `NEGADO` → falta permissão. Ajustar a role (seção 3) **antes** de seguir, ou seguir ciente de que parte da análise ficará parcial.
-
-### 4.3 Rodar o assessment
-
-```bash
-python3 zabbix_assessment.py --customer "Nome do Cliente" --env-name "Produção" --days 30
-```
-
-Durante a execução o progresso é exibido com horário (`[HH:MM:SS] hosts...`, `itens (por lote de hosts)...`, `eventos de 30 dias...` etc.). Ao final:
-
-```
-[16:42:10] Pilares: Confiabilidade da plataforma 62 · Cobertura de monitoramento 71 · ...
-[16:42:10] Concluído: score 64/100 · 812 chamadas de leitura · saída em /home/user/zabbix-assessment-20261125-1640
-```
-
-### 4.4 Cenários comuns
-
-| Cenário | Comando |
+| Resultado | Significado |
 |---|---|
-| Certificado interno / self-signed | `--ca-bundle /caminho/ca.pem` (preferível) ou `--insecure` |
-| Proxy HTTP corporativo atrapalhando o acesso via VPN | `--no-proxy` |
-| Jump server sem `reportlab`/`python-pptx` | `--formats none` (depois gerar PDF/PPTX em outra máquina, ver 4.5) |
-| Avaliar só alguns host groups | `--groups "Linux*,Windows servers"` |
-| Ambiente muito grande / API lenta | `--timeout 300` e manter `--threads 4` (ou reduzir para 2) |
-| Validar integrações esperadas | `--expected-integrations servicenow,teams,pagerduty` |
-| Pasta de saída específica | `--out ./saida-cliente-x` |
+| `OK` | Método acessível. |
+| `n/a (requer X.Y+)` | Método não existe nessa versão do Zabbix. Normal. |
+| `NEGADO` | Falta permissão. Ajustar a role (seção 3) antes de seguir. |
 
-Exemplo combinado:
+### Passo 3 — Executar
+
 ```bash
-python3 zabbix_assessment.py --insecure --no-proxy --formats none \
-  --customer "Cliente X" --env-name "Produção" --days 30
+python3 zabbix_assessment.py --customer "Cliente X" --env-name "Produção" --days 30
 ```
 
-### 4.5 Gerar PDF/PPTX fora do jump server (`--render-only`)
+Ao final o script exibe o score e a pasta de saída (`zabbix-assessment-AAAAMMDD-HHMM`). Abra o `relatorio.html`.
 
-1. No jump server, coletar sem PDF/PPTX: `--formats none`.
-2. Copiar a pasta de saída (ou só o `dados.json`) para a sua máquina, por canal aprovado.
-3. Na sua máquina (com `pip install --user reportlab python-pptx`):
-   ```bash
-   python3 zabbix_assessment.py --render-only ./zabbix-assessment-20261124-1600/dados.json --customer "Cliente X"
-   ```
-   Não conecta no Zabbix. Regera **todos** os arquivos (HTML, CSV, PDF, PPTX) na mesma pasta do JSON (ou em `--out`).
+### Passo 4 — Limpar
 
-> Informe `--customer` novamente no `--render-only`: o nome do cliente não é lido do `dados.json`. O nome do ambiente (`--env-name`) já fica gravado no JSON.
+```bash
+unset ZBX_TOKEN ZBX_USER ZBX_PASSWORD ZBX_URL                                    # Linux
+Remove-Item Env:ZBX_* -ErrorAction SilentlyContinue                              # Windows
+```
+
+Copie a pasta de saída por canal aprovado e apague-a da máquina de execução.
+
+### Opções frequentes
+
+| Situação | Adicionar ao comando |
+|---|---|
+| Certificado interno / self-signed | `--ca-bundle ca.pem` (ou `--insecure`) |
+| Proxy corporativo bloqueando o acesso | `--no-proxy` |
+| Máquina sem `reportlab` / `python-pptx` | `--formats none` |
+| Avaliar só alguns host groups | `--groups "Linux*,Windows servers"` |
+| Ambiente grande / timeouts | `--timeout 300 --threads 2` |
+
+### Gerar PDF/PPTX em outra máquina
+
+Se a coleta foi feita com `--formats none`, copie o `dados.json` para uma máquina com `pip install --user reportlab python-pptx` e rode:
+
+```bash
+python3 zabbix_assessment.py --render-only ./zabbix-assessment-AAAAMMDD-HHMM/dados.json --customer "Cliente X"
+```
+
+Não conecta no Zabbix; regera todos os relatórios na pasta do JSON.
 
 ---
 
-## 5. Execução no Windows (PowerShell)
-
-Os comandos funcionam no **Windows PowerShell 5.1** e no **PowerShell 7+** (`pwsh`); onde houver diferença, está indicado.
-
-### 5.1 Verificar o Python e instalar as bibliotecas opcionais
-
-```powershell
-py --version                  # launcher do Python (instalação padrão do python.org)
-python --version              # alternativa, se o comando 'py' não existir
-```
-
-Se nenhum dos dois responder, instale o Python 3.8+ (python.org ou `winget install Python.Python.3.12`) e abra uma nova janela do PowerShell.
-
-Bibliotecas opcionais para PDF/PPTX (não são necessárias para a coleta):
-```powershell
-py -m pip install --user reportlab python-pptx
-```
-
-### 5.2 Ir para a pasta do script
-
-```powershell
-Set-Location C:\caminho\assessment-zabbix
-Get-ChildItem .\zabbix_assessment.py      # confirma que o script está na pasta
-```
-
-### 5.3 Registrar as variáveis de ambiente
-
-As variáveis `$env:` valem **só para a janela atual** do PowerShell e somem ao fechá-la.
-
-```powershell
-# URL do Zabbix (frontend ou api_jsonrpc.php)
-$env:ZBX_URL = 'https://zabbix.interno/'
-
-# API token, sem exibir na tela
-$sec = Read-Host 'API token' -AsSecureString
-$env:ZBX_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
-Remove-Variable sec
-```
-
-No PowerShell 7+, a leitura do token pode ser feita em uma linha:
-```powershell
-$env:ZBX_TOKEN = Read-Host 'API token' -AsSecureString | ConvertFrom-SecureString -AsPlainText
-```
-
-> ⚠️ **Nunca digite o token direto no comando** (`$env:ZBX_TOKEN = 'abc...'`): o PowerShell grava os comandos digitados em um arquivo de histórico (`(Get-PSReadLineOption).HistorySavePath`). O que é digitado no `Read-Host` não é gravado.
-
-**Alternativa com usuário/senha** (quando não houver token):
-```powershell
-$env:ZBX_USER = 'svc_assessment'
-# não defina ZBX_PASSWORD: o script pede a senha no prompt, sem exibi-la
-```
-
-**CA interna** (alternativa ao `--insecure`):
-```powershell
-$env:ZBX_CA_BUNDLE = 'C:\certs\ca-interna.pem'
-```
-
-**Conferir o que está definido** (sem mostrar o valor do token):
-```powershell
-Get-ChildItem Env:ZBX_* | Select-Object Name, @{n='Definida'; e={[bool]$_.Value}}
-```
-
-**Persistir só a URL para próximas sessões** (opcional; vale para novas janelas). **Nunca persista o token ou a senha.**
-```powershell
-[Environment]::SetEnvironmentVariable('ZBX_URL', 'https://zabbix.interno/', 'User')
-# para remover depois:
-[Environment]::SetEnvironmentVariable('ZBX_URL', $null, 'User')
-```
-
-### 5.4 Testar conexão e permissões
-
-```powershell
-py .\zabbix_assessment.py --test
-```
-
-Interpretação da saída: ver [seção 4.2](#42-testar-conexão-e-permissões-sempre-fazer-primeiro).
-
-### 5.5 Executar o assessment
-
-```powershell
-py .\zabbix_assessment.py --customer "Cliente X" --env-name "Produção" --days 30
-```
-
-**Comando em várias linhas:** use a crase (`` ` ``) no fim da linha. Ela precisa ser o **último caractere**, sem espaço depois.
-```powershell
-py .\zabbix_assessment.py `
-  --insecure --no-proxy --formats none `
-  --customer "Cliente X" --env-name "Produção" --days 30
-```
-
-**Parâmetros em uma lista** (evita problemas com a crase e facilita reaproveitar):
-```powershell
-$params = @(
-  '--customer', 'Cliente X'
-  '--env-name', 'Produção'
-  '--days', '30'
-  '--groups', 'Linux*,Windows servers'
-  '--formats', 'none'
-)
-py .\zabbix_assessment.py @params
-```
-
-**Salvar o log em arquivo** (PowerShell 7+):
-```powershell
-py .\zabbix_assessment.py --customer "Cliente X" 2>&1 | Tee-Object -FilePath .\assessment.log
-```
-No Windows PowerShell 5.1 o redirecionamento da saída de erro de programas externos adiciona ruído ao arquivo; prefira rodar no `pwsh` quando precisar do log. O status de cada coletor fica registrado de qualquer forma no apêndice do `relatorio.html`.
-
-### 5.6 Abrir, regerar e empacotar o resultado
-
-```powershell
-# pasta de saída mais recente
-$out = Get-ChildItem -Directory .\zabbix-assessment-* | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-
-Invoke-Item (Join-Path $out.FullName 'relatorio.html')   # abre o relatório no navegador
-Invoke-Item $out.FullName                                # abre a pasta no Explorer
-
-# regerar relatórios (ex.: em outra máquina, com reportlab/python-pptx)
-py .\zabbix_assessment.py --render-only (Join-Path $out.FullName 'dados.json') --customer "Cliente X"
-
-# compactar para transferência por canal aprovado
-Compress-Archive -Path $out.FullName -DestinationPath "$($out.FullName).zip"
-```
-
-### 5.7 Diagnóstico de rede
-
-```powershell
-Test-NetConnection zabbix.interno -Port 443           # porta HTTPS alcançável?
-Resolve-DnsName zabbix.interno                        # DNS resolve?
-Get-ChildItem Env: | Where-Object Name -match 'proxy' # há proxy definido no ambiente? (se sim, testar --no-proxy)
-
-# chamada anônima à API (não usa token): deve retornar a versão do Zabbix
-$body = '{"jsonrpc":"2.0","method":"apiinfo.version","params":{},"id":1}'
-Invoke-RestMethod -Method Post -Uri "$($env:ZBX_URL.TrimEnd('/'))/api_jsonrpc.php" -ContentType 'application/json-rpc' -Body $body
-```
-
-- Se `ZBX_URL` já terminar em `api_jsonrpc.php`, use `-Uri $env:ZBX_URL`.
-- No PowerShell 7+, com certificado de CA interna, adicione `-SkipCertificateCheck` ao `Invoke-RestMethod`.
-
-### 5.8 Limpeza ao final
-
-```powershell
-# remove credenciais e variáveis da sessão
-Remove-Item Env:ZBX_TOKEN, Env:ZBX_PASSWORD, Env:ZBX_USER -ErrorAction SilentlyContinue
-Remove-Item Env:ZBX_URL, Env:ZBX_CA_BUNDLE -ErrorAction SilentlyContinue
-
-# após copiar o resultado, apague a saída da máquina (confira o caminho antes)
-Remove-Item -Recurse -Force $out.FullName
-Remove-Item -Force "$($out.FullName).zip" -ErrorAction SilentlyContinue
-```
-
----
-
-## 6. Referência de parâmetros
+## 5. Referência de parâmetros
 
 | Parâmetro | Variável de ambiente | Padrão | Descrição |
 |---|---|---|---|
@@ -331,7 +157,7 @@ Remove-Item -Force "$($out.FullName).zip" -ErrorAction SilentlyContinue
 
 ---
 
-## 7. Arquivos gerados
+## 6. Arquivos gerados
 
 Todos na pasta de saída (padrão `./zabbix-assessment-AAAAMMDD-HHMM/`). CSVs usam `;` como separador e UTF-8 com BOM (abrem direto no Excel em pt-BR).
 
@@ -352,7 +178,7 @@ Todos na pasta de saída (padrão `./zabbix-assessment-AAAAMMDD-HHMM/`). CSVs us
 
 ---
 
-## 8. Como ler o resultado
+## 7. Como ler o resultado
 
 ### Score
 
@@ -387,14 +213,14 @@ Um coletor com falha **não derruba** o assessment: ele é registrado como parci
 
 ---
 
-## 9. Troubleshooting
+## 8. Troubleshooting
 
 | Mensagem | Causa provável | Solução |
 |---|---|---|
 | `informe --url ou ZBX_URL` | URL não definida. | Exportar `ZBX_URL` ou passar `--url`. |
-| `informe ZBX_TOKEN (recomendado) ou ZBX_USER` | Nenhuma credencial definida. | Exportar `ZBX_TOKEN` (ou `ZBX_USER`). Em PowerShell, conferir com `$env:ZBX_TOKEN`. |
+| `informe ZBX_TOKEN (recomendado) ou ZBX_USER` | Nenhuma credencial definida. | Exportar `ZBX_TOKEN` (ou `ZBX_USER`). Refazer o Passo 1 na mesma janela do terminal. |
 | `Erro TLS: ... Use --ca-bundle <ca.pem> ou --insecure.` | Certificado de CA interna/self-signed. | Pedir o PEM da CA ao cliente e usar `--ca-bundle`; em último caso `--insecure`. |
-| `Sem conexão com ...: <motivo>` | VPN, rota, DNS, firewall ou proxy. | Testar `curl -k <URL>/api_jsonrpc.php` da mesma máquina (no Windows, ver [seção 5.7](#57-diagnóstico-de-rede)); se houver `HTTPS_PROXY` no ambiente, usar `--no-proxy`. |
+| `Sem conexão com ...: <motivo>` | VPN, rota, DNS, firewall ou proxy. | Testar a porta: `curl -k <URL>/api_jsonrpc.php` (Linux) ou `Test-NetConnection zabbix.interno -Port 443` (Windows). Se houver `HTTPS_PROXY` no ambiente, usar `--no-proxy`. |
 | `Falha de autenticação/API: ...` | Usuário/senha errados, usuário bloqueado, API desabilitada. | Validar credencial com o administrador do cliente. |
 | `Credencial recusada pelo Zabbix (...)` | Token inválido/expirado/desabilitado, ou role sem API access. | Gerar novo token; conferir *API access = Enabled* e allow list `*.get` na role. |
 | `--groups não encontrou host groups para: ...` | Nenhum host group casou com o padrão. | Conferir nomes no frontend; usar curinga (`"Linux*"`). |
@@ -408,7 +234,7 @@ Erros HTTP 429/5xx e falhas de rede transitórias são **repetidos automaticamen
 
 ---
 
-## 10. Checklist do suporte
+## 9. Checklist de execução
 
 **Antes**
 - [ ] Credencial criada com a role `Assessment-ReadOnly` e token com expiração.
@@ -425,44 +251,4 @@ Erros HTTP 429/5xx e falhas de rede transitórias são **repetidos automaticamen
 - [ ] Gerar PDF/PPTX (direto ou via `--render-only`).
 - [ ] Copiar a pasta de saída por canal aprovado e **apagar do jump server**.
 - [ ] Solicitar ao cliente a **revogação do token** e a desativação do usuário de assessment.
-- [ ] Limpar variáveis de ambiente da sessão (`unset ZBX_TOKEN ZBX_PASSWORD` / `Remove-Item Env:ZBX_TOKEN`).
-
----
-
-## 11. Referências rápidas de comandos
-
-```bash
-# ajuda completa dos parâmetros
-python3 zabbix_assessment.py --help
-
-# teste de conexão
-python3 zabbix_assessment.py --test
-
-# execução padrão
-python3 zabbix_assessment.py --customer "Cliente X" --env-name "Produção" --days 30
-
-# jump server restrito (CA interna, sem proxy, sem PDF/PPTX)
-python3 zabbix_assessment.py --insecure --no-proxy --formats none --customer "Cliente X"
-
-# escopo por host groups
-python3 zabbix_assessment.py --groups "Linux*,Windows servers" --threads 4 --customer "Cliente X"
-
-# regerar relatórios a partir da coleta
-python3 zabbix_assessment.py --render-only ./zabbix-assessment-20261124-1600/dados.json --customer "Cliente X"
-```
-
-**Windows (PowerShell):** detalhes na [seção 5](#5-execução-no-windows-powershell).
-```powershell
-# variáveis da sessão
-$env:ZBX_URL = 'https://zabbix.interno/'
-$sec = Read-Host 'API token' -AsSecureString
-$env:ZBX_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec)); Remove-Variable sec
-
-# ajuda, teste e execução
-py .\zabbix_assessment.py --help
-py .\zabbix_assessment.py --test
-py .\zabbix_assessment.py --customer "Cliente X" --env-name "Produção" --days 30
-
-# limpeza
-Remove-Item Env:ZBX_TOKEN, Env:ZBX_PASSWORD, Env:ZBX_USER, Env:ZBX_URL -ErrorAction SilentlyContinue
-```
+- [ ] Limpar variáveis de ambiente da sessão (Passo 4).
